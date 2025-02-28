@@ -1,0 +1,122 @@
+import streamlit as st
+import barcode
+from barcode.writer import ImageWriter
+from PIL import Image
+import gspread
+from datetime import datetime
+from streamlit_js_eval import streamlit_js_eval
+from io import BytesIO
+import pandas as pd
+from google.oauth2 import service_account
+
+# Databases
+google_cloud_secrets = st.secrets["google_cloud"]
+creds = service_account.Credentials.from_service_account_info(
+    {
+        "type": google_cloud_secrets["type"],
+        "project_id": google_cloud_secrets["project_id"],
+        "private_key_id": google_cloud_secrets["private_key_id"],
+        "private_key": google_cloud_secrets["private_key"].replace("\\n", "\n"),
+        "client_email": google_cloud_secrets["client_email"],
+        "client_id": google_cloud_secrets["client_id"],
+        "auth_uri": google_cloud_secrets["auth_uri"],
+        "token_uri": google_cloud_secrets["token_uri"],
+        "auth_provider_x509_cert_url": google_cloud_secrets["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": google_cloud_secrets["client_x509_cert_url"],
+        "universe_domain": google_cloud_secrets["universe_domain"],
+    },
+    scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"],
+)
+
+client = gspread.authorize(creds)
+spreadsheet_id = "15at-sHNUtXCZZMT-COgbdg4u_IMdhrMgx9BfgbNjINg"
+#Coding Database Function
+def get_data(sheet_name):
+    
+    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
+    df_sheet = pd.DataFrame(sheet)
+    return df_sheet
+
+def input_data (generate_code, generate_desc, sequence_number):
+    sheet = client.open_by_key(spreadsheet_id).worksheet("Master")
+    sheet.append_row([generate_code, generate_desc, sequence_number], value_input_option="USER_ENTERED")
+
+
+
+
+
+
+
+
+
+# Coding UI
+
+if "numbering_sub" not in st.session_state:
+    with st.spinner("Updating Numbering Sub Data . . . "):
+        st.session_state.numbering_sub = get_data("Numbering Sub")
+
+if "numbering_kategori" not in st.session_state:
+    with st.spinner("Updating Numbering Kategori Data . . . "):
+        st.session_state.numbering_kategori = get_data("Numbering Kategori")
+
+if "master" not in st.session_state:
+    with st.spinner("Updating Master Data . . . "):
+        st.session_state.master = get_data("Master")
+
+@st.cache_data(ttl=600)  # Cache item_master selama 10 menit
+def get_cached_item_master():
+    return get_data("ItemMaster")
+
+
+
+
+
+kategori = st.selectbox("Kategori", options=["Pilih Kategori"] + sorted(st.session_state.numbering_kategori['Item Group']))
+subitem = st.selectbox("Subitem", options=sorted(st.session_state.numbering_sub[st.session_state.numbering_sub['Kategori'] == kategori]['Sub Item'].unique()))
+desc1 = st.text_input("Desc1", value=subitem, disabled=True)
+desc2 = st.text_input("Desc2")
+if not desc2:
+    desc2 = " "
+    desc1 = " "
+generate_desc = (desc1 + " " + desc2).upper()
+
+
+button = st.button("Generate")
+
+if button:
+    tahun = datetime.now().year
+
+    akronim = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
+
+    num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
+
+    num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
+
+
+    count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
+
+    generate_code = st.text_input("ItemCode", value=f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}", disabled=True)
+    generate_desc = st.text_input("Generated Description", value=generate_desc, disabled=True)
+    sequence_number = st.text_input("Sequence Number", value=f"{tahun}{num_kat:02d}{num_sub:02d}{count_akronim+1:04d}", disabled=True)
+    
+
+    # Pilih format barcode (misalnya Code128)
+    barcode_format = barcode.get_barcode_class('code128')
+
+    # Buat objek barcode
+    barcode_object = barcode_format(sequence_number, writer=ImageWriter())
+
+    # Simpan barcode ke dalam BytesIO (tanpa menyimpan ke file)
+    barcode_bytes = BytesIO()
+    barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200})
+
+    # Buka gambar barcode dari BytesIO
+    barcode_bytes.seek(0)
+    image = Image.open(barcode_bytes)
+
+
+
+    # Tampilkan gambar barcode dengan ukuran yang lebih kecil
+    st.image(image, width=300)  # Sesuaikan width sesuai kebutuhan
+    input_data(generate_code, generate_desc, sequence_number)
+    streamlit_js_eval(js_expressions="parent.window.location.reload()")
