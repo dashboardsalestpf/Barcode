@@ -119,7 +119,9 @@ if "generate_code" in st.session_state:
     barcode_image = Image.open(st.session_state.barcode_image)
     st.image(barcode_image, width=300)
 
+    col1,col2 = st.columns(2)
+
     # Download barcode tanpa menghilangkan hasil
-    st.download_button("Download Barcode", st.session_state.barcode_image, "barcode.png", "image/png")
-    if st.button("Reset"):
+    col1.download_button("Download Barcode", st.session_state.barcode_image, "barcode.png", "image/png")
+    if col2.button("Reset"):
         streamlit_js_eval(js_expressions="parent.window.location.reload()")
