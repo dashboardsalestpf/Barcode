@@ -85,45 +85,38 @@ button = st.button("Generate")
 
 if button:
     tahun = datetime.now().year
-
     akronim = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
-
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
-
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
-
-
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
 
-    generate_code = st.text_input("ItemCode", value=f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}", disabled=True)
-    generate_desc = st.text_input("Generated Description", value=generate_desc, disabled=True)
-    sequence_number = st.text_input("Sequence Number", value=f"{tahun}{num_kat:02d}{num_sub:02d}{count_akronim+1:04d}", disabled=True)
-    
+    st.session_state.generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
+    st.session_state.generate_desc = generate_desc
+    st.session_state.sequence_number = f"{tahun}{num_kat:02d}{num_sub:02d}{count_akronim+1:04d}"
 
-    # Pilih format barcode (misalnya Code128)
+    # Buat barcode
     barcode_format = barcode.get_barcode_class('code128')
+    barcode_object = barcode_format(st.session_state.sequence_number, writer=ImageWriter())
 
-    # Buat objek barcode
-    barcode_object = barcode_format(sequence_number, writer=ImageWriter())
-
-    # Simpan barcode ke dalam BytesIO (tanpa menyimpan ke file)
     barcode_bytes = BytesIO()
     barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200})
-
-    # Buka gambar barcode dari BytesIO
     barcode_bytes.seek(0)
+
+    # Simpan gambar barcode
     image = Image.open(barcode_bytes)
+    st.session_state.barcode_image = barcode_bytes  # Simpan barcode dalam session state
 
+    input_data(st.session_state.generate_code, st.session_state.generate_desc, st.session_state.sequence_number)
 
+# Menampilkan hasil jika sudah di-generate
+if "generate_code" in st.session_state:
+    st.text_input("ItemCode", value=st.session_state.generate_code, disabled=True)
+    st.text_input("Generated Description", value=st.session_state.generate_desc, disabled=True)
+    st.text_input("Sequence Number", value=st.session_state.sequence_number, disabled=True)
+    
+    # Menampilkan barcode
+    barcode_image = Image.open(st.session_state.barcode_image)
+    st.image(barcode_image, width=300)
 
-    # Tampilkan gambar barcode dengan ukuran yang lebih kecil
-    st.image(image, width=300)  # Sesuaikan width sesuai kebutuhan
-    input_data(generate_code, generate_desc, sequence_number)
-
-    # Simpan gambar barcode ke dalam BytesIO
-    image_bytes = BytesIO()
-    image.save(image_bytes, "PNG")
-    image_bytes.seek(0)
-
-    # Download gambar barcode
-    st.download_button("Download Barcode", image_bytes, "barcode.png", "image/png")
+    # Download button tetap ada dan tidak menghilangkan hasil
+    st.download_button("Download Barcode", st.session_state.barcode_image, "barcode.png", "image/png")
