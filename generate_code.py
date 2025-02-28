@@ -84,7 +84,7 @@ generate_desc = (desc1 + " " + desc2).upper()
 button = st.button("Generate")
 
 if button:
-    tahun = datetime.now().year
+    tahun = datetime.now().year % 100
     akronim = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
