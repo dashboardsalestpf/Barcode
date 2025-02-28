@@ -39,11 +39,12 @@ def get_data(sheet_name):
     sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
     df_sheet = pd.DataFrame(sheet)
     return df_sheet
-
+with st.spinner("Updating Master Data . . . "):
+    st.session_state.master = get_data("Master")
 # Load Data into Session State
-if "master" not in st.session_state:
-    with st.spinner("Updating Master Data . . . "):
-        st.session_state.master = get_data("Master")
+
+    
+        
 
 st.table(st.session_state.master)
 
