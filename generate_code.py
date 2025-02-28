@@ -119,4 +119,11 @@ if button:
     # Tampilkan gambar barcode dengan ukuran yang lebih kecil
     st.image(image, width=300)  # Sesuaikan width sesuai kebutuhan
     input_data(generate_code, generate_desc, sequence_number)
-    streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+    # Simpan gambar barcode ke dalam BytesIO
+    image_bytes = BytesIO()
+    image.save(image_bytes, "PNG")
+    image_bytes.seek(0)
+
+    # Download gambar barcode
+    st.download_button("Download Barcode", image_bytes, "barcode.png", "image/png")
