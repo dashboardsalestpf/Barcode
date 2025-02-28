@@ -1,7 +1,10 @@
 streamlit
 python-barcode
-Pillow
+pillow
 gspread
 pandas
 google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-auth-oauthlib
 streamlit-js-eval

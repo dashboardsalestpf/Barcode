@@ -12,8 +12,14 @@ dashboard = st.Page(
     icon='📊',
 )
 
+generate_photos = st.Page(
+    page='generate_photos.py',
+    title='Generate Photos',
+    icon='📸',
+)
+
 pg = st.navigation({
-    'Generate Code': [generate_code, dashboard]
+    'Generate Code': [dashboard,generate_code, generate_photos ]
 })
 
 

@@ -30,60 +30,44 @@ creds = service_account.Credentials.from_service_account_info(
 
 client = gspread.authorize(creds)
 spreadsheet_id = "15at-sHNUtXCZZMT-COgbdg4u_IMdhrMgx9BfgbNjINg"
-#Coding Database Function
-def get_data(sheet_name):
-    
-    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
-    df_sheet = pd.DataFrame(sheet)
-    return df_sheet
 
-def input_data (generate_code, generate_desc, sequence_number):
+def get_data(sheet_name):
+    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
+    return pd.DataFrame(sheet)
+
+def input_data(generate_code, generate_desc, sequence_number):
     sheet = client.open_by_key(spreadsheet_id).worksheet("Master")
     sheet.append_row([generate_code, generate_desc, sequence_number], value_input_option="USER_ENTERED")
 
-
-
-
-
-
-
-
-
 # Coding UI
-
 if "numbering_sub" not in st.session_state:
-    with st.spinner("Updating Numbering Sub Data . . . "):
+    with st.spinner("Updating Numbering Sub Data . . ."):
         st.session_state.numbering_sub = get_data("Numbering Sub")
 
 if "numbering_kategori" not in st.session_state:
-    with st.spinner("Updating Numbering Kategori Data . . . "):
+    with st.spinner("Updating Numbering Kategori Data . . ."):
         st.session_state.numbering_kategori = get_data("Numbering Kategori")
 
 if "master" not in st.session_state:
-    with st.spinner("Updating Master Data . . . "):
+    with st.spinner("Updating Master Data . . ."):
         st.session_state.master = get_data("Master")
 
-@st.cache_data(ttl=600)  # Cache item_master selama 10 menit
+@st.cache_data(ttl=600)
 def get_cached_item_master():
     return get_data("ItemMaster")
-
-
-
-
 
 kategori = st.selectbox("Kategori", options=["Pilih Kategori"] + sorted(st.session_state.numbering_kategori['Item Group']))
 subitem = st.selectbox("Subitem", options=sorted(st.session_state.numbering_sub[st.session_state.numbering_sub['Kategori'] == kategori]['Sub Item'].unique()))
 desc1 = st.text_input("Desc1", value=subitem, disabled=True)
-desc2 = st.text_input("Desc2")
-if not desc2:
-    desc2 = " "
-    desc1 = " "
-generate_desc = (desc1 + " " + desc2).upper()
+desc2 = st.text_input("Desc2", value="")
+if desc1 and desc2:
+    generate_desc = (desc1 + " " + desc2).strip().upper()
 
 
-button = st.button("Generate")
 
-if button:
+
+
+if desc2 and kategori != "Pilih Kategori":
     tahun = datetime.now().year % 100
     akronim = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
@@ -91,38 +75,44 @@ if button:
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Initial'] == akronim]['InitialCode'].values[0]
 
-    # Simpan hasil ke dalam session_state
-    st.session_state.generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
-    st.session_state.generate_desc = generate_desc
-    st.session_state.sequence_number = f"{tahun}{num_initial:04d}{num_kat:02d}{num_sub:02d}{count_akronim+1:04d}"
+    generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
+    sequence_number = f"{tahun}{num_initial:06d}{count_akronim+1:04d}"
 
-    # Generate barcode
     barcode_format = barcode.get_barcode_class('code128')
-    barcode_object = barcode_format(st.session_state.sequence_number, writer=ImageWriter())
+    barcode_object = barcode_format(sequence_number, writer=ImageWriter())
 
     barcode_bytes = BytesIO()
     barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200})
     barcode_bytes.seek(0)
 
-    # Simpan barcode di session state
-    st.session_state.barcode_image = barcode_bytes
-
-    # Simpan data ke Google Sheets
-    input_data(st.session_state.generate_code, st.session_state.generate_desc, st.session_state.sequence_number)
-
-# --- Menampilkan Hasil Jika Sudah Dihasilkan ---
-if "generate_code" in st.session_state:
-    st.text_input("ItemCode", value=st.session_state.generate_code, disabled=True)
-    st.text_input("Generated Description", value=st.session_state.generate_desc, disabled=True)
-    st.text_input("Sequence Number", value=st.session_state.sequence_number, disabled=True)
-
-    # Menampilkan barcode
-    barcode_image = Image.open(st.session_state.barcode_image)
+    st.text_input("ItemCode", value=generate_code, disabled=True)
+    st.text_input("Generated Description", value=generate_desc, disabled=True)
+    st.text_input("Sequence Number", value=sequence_number, disabled=True)
+    
+    barcode_image = Image.open(barcode_bytes)
     st.image(barcode_image, width=300)
+    
+    if generate_desc in st.session_state.master['ItemName'].values:
+        st.warning("Deskripsi sudah digunakan oleh Item Code lain.")
+        st.stop()
+        
 
-    col1,col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
-    # Download barcode tanpa menghilangkan hasil
-    col1.download_button("Download Barcode", st.session_state.barcode_image, f"{st.session_state.generate_code}.png", "image/png")
+    if col1.button("Submit"):
+        st.session_state.master = get_data("Master")
+        if generate_desc in st.session_state.master['ItemName'].values:
+            st.warning("Sudah disimpan, silahkan reset.")
+        else:
+            input_data(generate_code, generate_desc, sequence_number)
+            st.download_button(
+                label="⬇ Download Barcode",
+                data=barcode_bytes.getvalue(),
+                file_name=f"{generate_code}.png",
+                mime="image/png"
+            )
+            st.success("Masuk Pak Max!!!")
+
     if col2.button("Reset"):
         streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
