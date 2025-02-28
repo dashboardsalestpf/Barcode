@@ -1,0 +1,7 @@
+streamlit
+python-barcode
+Pillow
+gspread
+pandas
+google-auth
+streamlit-js-eval
