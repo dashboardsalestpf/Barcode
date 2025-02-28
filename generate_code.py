@@ -89,11 +89,12 @@ if button:
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
+    num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Initial'] == akronim]['InitialCode'].values[0]
 
     # Simpan hasil ke dalam session_state
     st.session_state.generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
     st.session_state.generate_desc = generate_desc
-    st.session_state.sequence_number = f"{tahun}{num_kat:02d}{num_sub:02d}{count_akronim+1:04d}"
+    st.session_state.sequence_number = f"{tahun}{num_initial:04d}{num_kat:02d}{num_sub:02d}{count_akronim+1:04d}"
 
     # Generate barcode
     barcode_format = barcode.get_barcode_class('code128')
