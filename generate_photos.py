@@ -55,7 +55,7 @@ if itemcodes:
     barcode_object = barcode_format(sequence_number, writer=ImageWriter())
 
     barcode_bytes = BytesIO()
-    barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200})
+    barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200, "font_size": 5})
     barcode_bytes.seek(0)
     barcode_image = Image.open(barcode_bytes)
 
@@ -80,24 +80,26 @@ if st.button("Generate with Foto") and foto_loading is not None:
     # Tambahkan teks (ItemCode) di bawah foto
     font_size = 40
     try:
-        font = ImageFont.truetype("arial.ttf", font_size)
+        font = ImageFont.truetype("Poppins-Medium.ttf", font_size)
     except:
         font = ImageFont.load_default()
 
-    text = f"ItemCode: {itemcodes}"
+    text = f"{itemcodes}"
     text_x = (template.width - draw.textlength(text, font=font)) // 2
     text_y = image_y + img.height + 20
     draw.text((text_x, text_y), text, fill="black", font=font)
 
     # Hitung tinggi teks agar barcode tidak menimpa teks
     text_height = font_size + 5  # Perkiraan tinggi teks dengan margin
-
+    barcode_image = barcode_image.resize((int(barcode_image.width * 1.5), int(barcode_image.height * 1.5)))
     # Tempelkan Barcode di bawah teks
     barcode_x = (template.width - barcode_image.width) // 2
     barcode_y = text_y + text_height + 20  # Jarak 20px dari teks
     template.paste(barcode_image, (barcode_x, barcode_y))
 
+    st.image(template, width=800)
+
     # Simpan & Download
     buf = BytesIO()
     template.save(buf, "PNG")
-    st.download_button("Download", buf.getvalue(), "template.png", "image/png")
+    st.download_button("Download", buf.getvalue(), f"{itemcodes}.png", "image/png")
