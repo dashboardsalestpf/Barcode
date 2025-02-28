@@ -9,7 +9,7 @@ from io import BytesIO
 import pandas as pd
 from google.oauth2 import service_account
 
-# Databases
+# --- Setup Database Connection ---
 google_cloud_secrets = st.secrets["google_cloud"]
 creds = service_account.Credentials.from_service_account_info(
     {
@@ -30,27 +30,18 @@ creds = service_account.Credentials.from_service_account_info(
 
 client = gspread.authorize(creds)
 spreadsheet_id = "15at-sHNUtXCZZMT-COgbdg4u_IMdhrMgx9BfgbNjINg"
-#Coding Database Function
-def get_data(sheet_name):
-    
-    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
-    df_sheet = pd.DataFrame(sheet)
-    return df_sheet
 
-def input_data (generate_code, generate_desc, sequence_number):
+# --- Function untuk Mengambil Data dari Google Sheets ---
+@st.cache_data(ttl=600)
+def get_data(sheet_name):
+    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
+    return pd.DataFrame(sheet)
+
+def input_data(generate_code, generate_desc, sequence_number):
     sheet = client.open_by_key(spreadsheet_id).worksheet("Master")
     sheet.append_row([generate_code, generate_desc, sequence_number], value_input_option="USER_ENTERED")
 
-
-
-
-
-
-
-
-
-# Coding UI
-
+# --- Load Data di Session State ---
 if "numbering_sub" not in st.session_state:
     with st.spinner("Updating Numbering Sub Data . . . "):
         st.session_state.numbering_sub = get_data("Numbering Sub")
@@ -63,14 +54,7 @@ if "master" not in st.session_state:
     with st.spinner("Updating Master Data . . . "):
         st.session_state.master = get_data("Master")
 
-@st.cache_data(ttl=600)  # Cache item_master selama 10 menit
-def get_cached_item_master():
-    return get_data("ItemMaster")
-
-
-
-
-
+# --- UI Selection ---
 kategori = st.selectbox("Kategori", options=["Pilih Kategori"] + sorted(st.session_state.numbering_kategori['Item Group']))
 subitem = st.selectbox("Subitem", options=sorted(st.session_state.numbering_sub[st.session_state.numbering_sub['Kategori'] == kategori]['Sub Item'].unique()))
 desc1 = st.text_input("Desc1", value=subitem, disabled=True)
@@ -78,12 +62,11 @@ desc2 = st.text_input("Desc2")
 if not desc2:
     desc2 = " "
     desc1 = " "
+
 generate_desc = (desc1 + " " + desc2).upper()
 
-
-button = st.button("Generate")
-
-if button:
+# --- Button Generate ---
+if st.button("Generate"):
     tahun = datetime.now().year
     akronim = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
