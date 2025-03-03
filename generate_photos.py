@@ -42,7 +42,7 @@ if "master" not in st.session_state:
     with st.spinner("Updating Master Data . . ."):
         st.session_state.master = get_data("Master")
 
-st.table(st.session_state.master)
+st.dataframe(st.session_state.master)
 
 # Select Item Code
 itemcodes = st.selectbox("Select ItemCode", st.session_state.master["ItemCode"].unique())
