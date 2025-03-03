@@ -43,8 +43,7 @@ with st.spinner("Updating Master Data . . . "):
     st.session_state.master = get_data("Master")
 # Load Data into Session State
 
-    
-        
+
 
 st.dataframe(st.session_state.master)
 
