@@ -112,7 +112,6 @@ if desc2 and kategori != "Pilih Kategori":
                 mime="image/png"
             )
             st.success("Masuk Pak Max!!!")
-            st.wait(1)
             streamlit_js_eval(js_expressions="parent.window.location.reload()")
 
     if col2.button("Reset"):
