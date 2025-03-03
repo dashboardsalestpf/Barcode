@@ -46,7 +46,7 @@ with st.spinner("Updating Master Data . . . "):
     
         
 
-st.table(st.session_state.master)
+st.dataframe(st.session_state.master)
 
 # Multiselect ItemCode
 itemcodes = st.multiselect("Select ItemCode", st.session_state.master["ItemCode"].unique())
