@@ -35,7 +35,7 @@ def get_data(sheet_name):
     sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
     return pd.DataFrame(sheet)
 
-def input_data(generate_code, generate_desc, sequence_number):
+def input_data(generate_code, generate_desc, sequence_number, kategori, subitem):
     st.session_state.master = get_data("Master")
     if generate_code in st.session_state.master['ItemCode'].unique():
         st.error("Code already exists. Please try again.")
@@ -47,7 +47,7 @@ def input_data(generate_code, generate_desc, sequence_number):
         st.error("Sequence Number already exists. Please try again.")
         st.stop()
     sheet = client.open_by_key(spreadsheet_id).worksheet("Master")
-    sheet.append_row([generate_code, generate_desc, sequence_number], value_input_option="USER_ENTERED")
+    sheet.append_row([generate_code, generate_desc, sequence_number, kategori, subitem], value_input_option="USER_ENTERED")
 
 # Coding UI
 if "numbering_sub" not in st.session_state:
@@ -84,12 +84,11 @@ if desc2 and kategori != "Pilih Kategori":
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Initial'] == akronim]['InitialCode'].values[0]
-    year_initial = f"{tahun}{num_initial:06d}"
-    count_initial = st.session_state.master['SequenceNumber'].str.contains(year_initial).sum()
+    kategori_sub_count = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
 
     generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
-    sequence_number = f"{tahun}{num_initial:06d}{count_initial+1:04d}"
-
+    sequence_number = f"{tahun}{num_initial:06d}{kategori_sub_count+1:04d}"
+    st.write(kategori_sub_count)
     barcode_format = barcode.get_barcode_class('code128')
     barcode_object = barcode_format(sequence_number, writer=ImageWriter())
 
@@ -119,7 +118,7 @@ if desc2 and kategori != "Pilih Kategori":
         if generate_desc in st.session_state.master['ItemName'].values:
             st.warning("Sudah disimpan, silahkan reset.")
         else:
-            input_data(generate_code, generate_desc, sequence_number)
+            input_data(generate_code, generate_desc, sequence_number, kategori, subitem)
             st.download_button(
                 label="⬇ Download Barcode",
                 data=barcode_bytes.getvalue(),
