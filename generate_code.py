@@ -84,9 +84,11 @@ if desc2 and kategori != "Pilih Kategori":
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Initial'] == akronim]['InitialCode'].values[0]
+    year_initial = f"{tahun}{num_initial:06d}"
+    count_initial = st.session_state.master['SequenceNumber'].str.contains(year_initial).sum()
 
     generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
-    sequence_number = f"{tahun}{num_initial:06d}{count_akronim+1:04d}"
+    sequence_number = f"{tahun}{num_initial:06d}{count_initial+1:04d}"
 
     barcode_format = barcode.get_barcode_class('code128')
     barcode_object = barcode_format(sequence_number, writer=ImageWriter())
