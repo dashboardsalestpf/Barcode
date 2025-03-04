@@ -88,7 +88,7 @@ if st.button("Generate Barcode"):
         
         # Tampilkan sample barcode di Streamlit jika ada
         if sample_image:
-            st.image(sample_image, caption=f"Sample Barcode for {itemcodes[0]}", use_column_width=True)
+            st.image(sample_image, caption=f"Sample Barcode for {itemcodes[0]}", use_container_width=True)
         
         # Auto download zip file
         st.download_button("Download Barcode", zip_buffer, "barcodes.zip", "application/zip")
