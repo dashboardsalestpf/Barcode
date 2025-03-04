@@ -100,6 +100,9 @@ if desc2 and kategori != "Pilih Kategori":
     col1, col2, col3 = st.columns(3)
 
     if col1.button("Submit"):
+        if akronim == "BELUM ADA INITIAL":
+            st.warning("Belum ada Initial, silahkan reset.")
+            st.stop()
         st.session_state.master = get_data("Master")
         if generate_desc in st.session_state.master['ItemName'].values:
             st.warning("Sudah disimpan, silahkan reset.")
