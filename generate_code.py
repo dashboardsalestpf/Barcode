@@ -42,6 +42,7 @@ def input_data(generate_code, generate_desc, sequence_number):
     if generate_desc in st.session_state.master['ItemName'].unique():
         st.error("Description already exists. Please try again.")
     if sequence_number in st.session_state.master['SequenceNumber'].unique():
+        st.error("Sequence Number already exists. Please try again.")
     sheet = client.open_by_key(spreadsheet_id).worksheet("Master")
     sheet.append_row([generate_code, generate_desc, sequence_number], value_input_option="USER_ENTERED")
 
