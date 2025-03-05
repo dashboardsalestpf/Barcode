@@ -35,8 +35,17 @@ def get_data(sheet_name):
     sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
     return pd.DataFrame(sheet)
 
-def input_data(generate_code, generate_desc, sequence_number, kategori, subitem):
+def input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code):
     st.session_state.master = get_data("Master")
+    akronim_now = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
+    count_akronim_now = st.session_state.master['ItemCode'].str.contains(akronim_now).sum()
+    checking_code_now = f"{akronim_now}-{count_akronim_now+1:04d}"
+
+    if checking_code != checking_code_now:
+        st.error("Lebih dari satu user membuat code dengan Sub Item ini. Silahkan coba lagi.")
+        st.stop()
+    
+
     if generate_code in st.session_state.master['ItemCode'].unique():
         st.error("Code already exists. Please try again.")
         st.stop()
@@ -85,7 +94,7 @@ if desc2 and kategori != "Pilih Kategori":
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['InitialCode'].values[0]
     kategori_sub_count = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
-
+    checking_code = f"{akronim}-{count_akronim+1:04d}"
     generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
     sequence_number = f"{tahun}{num_initial:06d}{kategori_sub_count+1:04d}"
     st.write(kategori_sub_count)
@@ -118,7 +127,7 @@ if desc2 and kategori != "Pilih Kategori":
         if generate_desc in st.session_state.master['ItemName'].values:
             st.warning("Sudah disimpan, silahkan reset.")
         else:
-            input_data(generate_code, generate_desc, sequence_number, kategori, subitem)
+            input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code)
             st.download_button(
                 label="⬇ Download Barcode",
                 data=barcode_bytes.getvalue(),
