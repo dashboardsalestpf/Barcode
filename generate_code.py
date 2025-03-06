@@ -67,10 +67,6 @@ if "numbering_kategori" not in st.session_state:
     with st.spinner("Updating Numbering Kategori Data . . ."):
         st.session_state.numbering_kategori = get_data("Numbering Kategori")
 
-if "numbering_sequence" not in st.session_state:
-    with st.spinner("Updating Numbering Sequence Data . . ."):
-        st.session_state.numbering_sequence = get_data("Numbering Sequence")
-
 if "master" not in st.session_state:
     with st.spinner("Updating Master Data . . ."):
         st.session_state.master = get_data("Master")
@@ -96,7 +92,7 @@ if desc2 and kategori != "Pilih Kategori":
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
-    num_initial = st.session_state.numbering_sequence[st.session_state.numbering_sequence['Sub Item'] == subitem]['InitialCode'].values[0]
+    num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number of Sequence'].values[0]
     kategori_sub_count = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
     checking_code = f"{akronim}-{count_akronim+1:04d}"
     generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
