@@ -98,22 +98,34 @@ if desc2 and kategori != "Pilih Kategori":
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
 
 
-    list_akronim = st.session_state.master[st.session_state.master['ItemCode'].str.contains(akronim)]['ItemCode'].unique()
-    list_akronim = pd.Series(list_akronim)
-    list_akronim['LastDigits'] = list_akronim.str[-4:].astype(int)
-    full_range = set(range( list_akronim['LastDigits'].min(), list_akronim['LastDigits'].max() + 1))
-    exist_code = set(list_akronim['LastDigits'])
-    missing = sorted(full_range - exist_code)
+    # jikanot exist
+
+
+
+    
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number of Sequence'].values[0]
     kategori_sub_count = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
     checking_code = f"{akronim}-{count_akronim+1:04d}"
+    list_akronim = st.session_state.master[st.session_state.master['ItemCode'].str.contains(akronim)]['ItemCode'].unique()
 
-    if missing:
-        missing = missing[0]
-        generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{missing:04d}"
-    else:
+
+    if st.session_state.master['ItemCode'].str.contains(akronim).sum() == 0:
         generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
+    else:
+        list_akronim = pd.Series(list_akronim)
+        list_akronim['LastDigits'] = list_akronim.str[-4:].astype(int)
+
+        full_range = set(range( list_akronim['LastDigits'].min(), list_akronim['LastDigits'].max() + 1))
+
+        exist_code = set(list_akronim['LastDigits'])
+        missing = sorted(full_range - exist_code)
+
+        if missing:
+            missing = missing[0]
+            generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{missing:04d}"
+        else:
+            generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
 
     sequence_number = f"{tahun}{num_initial:06d}{kategori_sub_count+1:04d}"
     st.write(kategori_sub_count)
