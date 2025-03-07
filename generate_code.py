@@ -37,6 +37,10 @@ def get_data(sheet_name):
 
 def input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code):
     st.session_state.master = get_data("Master")
+
+
+    
+
     akronim_now = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
     count_akronim_now = st.session_state.master['ItemCode'].str.contains(akronim_now).sum()
     checking_code_now = f"{akronim_now}-{count_akronim_now+1:04d}"
@@ -45,6 +49,7 @@ def input_data(generate_code, generate_desc, sequence_number, kategori, subitem,
         st.error("Lebih dari satu user membuat code dengan Sub Item ini. Silahkan coba lagi.")
         st.stop()
     
+    # elif 
 
     if generate_code in st.session_state.master['ItemCode'].unique():
         st.error("Code already exists. Please try again.")
@@ -91,11 +96,24 @@ if desc2 and kategori != "Pilih Kategori":
     akronim = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Initial'].values[0]
     num_kat = st.session_state.numbering_kategori[st.session_state.numbering_kategori['Item Group'] == kategori]['Numbering'].values[0]
     num_sub = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number Of Sub'].values[0]
+
+
+    list_akronim = st.session_state.master[st.session_state.master['ItemCode'].str.contains(akronim)]['ItemCode'].unique()
+    list_akronim = pd.Series(list_akronim)
+    list_akronim['LastDigits'] = list_akronim.str[-4:].astype(int)
+    full_range = set(range( list_akronim['LastDigits'].min(), list_akronim['LastDigits'].max() + 1))
+    exist_code = set(list_akronim['LastDigits'])
+    missing = sorted(full_range - exist_code)
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number of Sequence'].values[0]
     kategori_sub_count = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
     checking_code = f"{akronim}-{count_akronim+1:04d}"
-    generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
+
+    if missing:
+        missing = missing[0]
+        generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{missing:04d}"
+    else:
+        generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
 
     sequence_number = f"{tahun}{num_initial:06d}{kategori_sub_count+1:04d}"
     st.write(kategori_sub_count)
@@ -140,4 +158,22 @@ if desc2 and kategori != "Pilih Kategori":
 
     if col2.button("Reset"):
         streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+
+
+# akronim = "TPL"
+
+# list_akronim = st.session_state.master[st.session_state.master['ItemCode'].str.contains(akronim)]['ItemCode'].unique()
+# list_akronim = pd.Series(list_akronim)
+# list_akronim['LastDigits'] = list_akronim.str[-4:].astype(int)
+# full_range = set(range( list_akronim['LastDigits'].min(), list_akronim['LastDigits'].max() + 1))
+# exist_code = set(list_akronim['LastDigits'])
+# missing = sorted(full_range - exist_code)
+
+# if missing:
+#     missing = missing[0]
+
+#     st.write(f"{missing} ini dia yang hilang")
+# else:
+#     st.write("Tidak ada yang hilang")
 
