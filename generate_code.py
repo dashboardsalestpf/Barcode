@@ -35,7 +35,7 @@ def get_data(sheet_name):
     sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
     return pd.DataFrame(sheet)
 
-def input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code):
+def input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code, akronim):
     st.session_state.master = get_data("Master")
 
 
@@ -61,7 +61,7 @@ def input_data(generate_code, generate_desc, sequence_number, kategori, subitem,
         st.error("Sequence Number already exists. Please try again.")
         st.stop()
     sheet = client.open_by_key(spreadsheet_id).worksheet("Master")
-    sheet.append_row([generate_code, generate_desc, sequence_number, kategori, subitem], value_input_option="USER_ENTERED")
+    sheet.append_row([generate_code, generate_desc, sequence_number, kategori, subitem, akronim], value_input_option="USER_ENTERED")
 
 # Coding UI
 if "numbering_sub" not in st.session_state:
@@ -158,7 +158,7 @@ if desc2 and kategori != "Pilih Kategori":
         if generate_desc in st.session_state.master['ItemName'].values:
             st.warning("Sudah disimpan, silahkan reset.")
         else:
-            input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code)
+            input_data(generate_code, generate_desc, sequence_number, kategori, subitem, checking_code, akronim)
             st.download_button(
                 label="⬇ Download Barcode",
                 data=barcode_bytes.getvalue(),
