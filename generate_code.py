@@ -45,6 +45,7 @@ def input_data(generate_code, generate_desc, sequence_number, kategori, subitem,
     count_akronim_now = st.session_state.master['ItemCode'].str.contains(akronim_now).sum()
     checking_code_now = f"{akronim_now}-{count_akronim_now+1:04d}"
 
+
     if checking_code != checking_code_now:
         st.error("Lebih dari satu user membuat code dengan Sub Item ini. Silahkan coba lagi.")
         st.stop()
@@ -104,31 +105,43 @@ if desc2 and kategori != "Pilih Kategori":
 
     
     count_akronim = st.session_state.master['ItemCode'].str.contains(akronim).sum()
+
+    count_sub = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
+    
+
+
+
     num_initial = st.session_state.numbering_sub[st.session_state.numbering_sub['Sub Item'] == subitem]['Number of Sequence'].values[0]
     kategori_sub_count = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count()
+
     checking_code = f"{akronim}-{count_akronim+1:04d}"
-    list_akronim = st.session_state.master[st.session_state.master['ItemCode'].str.contains(akronim)]['ItemCode'].unique()
+
+    
+    list_akronim = st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].unique()
 
 
-    if st.session_state.master['ItemCode'].str.contains(akronim).sum() == 0:
-        generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
+    if st.session_state.master[st.session_state.master['Sub Item'] == subitem]['ItemCode'].count() == 0:
+        generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_sub+1:04d}"
     else:
         list_akronim = pd.Series(list_akronim)
         list_akronim['LastDigits'] = list_akronim.str[-4:].astype(int)
 
-        full_range = set(range( list_akronim['LastDigits'].min(), list_akronim['LastDigits'].max() + 1))
-
-        exist_code = set(list_akronim['LastDigits'])
-        missing = sorted(full_range - exist_code)
-
-        if missing:
-            missing = missing[0]
-            generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{missing:04d}"
+        if list_akronim['LastDigits'].min() != 1:
+            generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-0001"
         else:
-            generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_akronim+1:04d}"
+
+            full_range = set(range( list_akronim['LastDigits'].min(), list_akronim['LastDigits'].max() + 1))
+
+            exist_code = set(list_akronim['LastDigits'])
+            missing = sorted(full_range - exist_code)
+
+            if missing:
+                missing = missing[0]
+                generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{missing:04d}"
+            else:
+                generate_code = f"{akronim}-{num_kat:02d}{num_sub:02d}-{count_sub+1:04d}"
 
     sequence_number = f"{tahun}{num_initial:06d}{kategori_sub_count+1:04d}"
-    st.write(kategori_sub_count)
     barcode_format = barcode.get_barcode_class('code128')
     barcode_object = barcode_format(sequence_number, writer=ImageWriter())
 
