@@ -40,7 +40,7 @@ def get_data(sheet_name):
 
 if "master" not in st.session_state:
     with st.spinner("Updating Master Data . . ."):
-        st.session_state.master = get_data("NEWLIST")
+        st.session_state.master = get_data("Master")
 
 st.dataframe(st.session_state.master)
 
