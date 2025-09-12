@@ -18,6 +18,12 @@ generate_photos = st.Page(
     icon='📸',
 )
 
+generate_photos2 = st.Page(
+    page='generate_photos2.py',
+    title='Generate Photos2',
+    icon='📸',
+)
+
 generate_photos_ws = st.Page(
     page='generate_photos_ws.py',
     title='Generate Photos WS',
