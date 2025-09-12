@@ -37,7 +37,7 @@ maintenance = st.Page(
 
 
 pg = st.navigation({
-    'Generate Code': [dashboard,generate_code,generate_photos,generate_photos_ws]
+    'Generate Code': [dashboard,generate_code,generate_photos,generate_photos2,generate_photos_ws]
 })
 
 
