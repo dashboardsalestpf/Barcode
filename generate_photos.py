@@ -38,16 +38,16 @@ def get_data(sheet_name):
     df_sheet = pd.DataFrame(sheet)
     return df_sheet
 
-if "master" not in st.session_state:
+if "newlist" not in st.session_state:
     with st.spinner("Updating Master Data . . ."):
-        st.session_state.master = get_data("NEWLIST")
+        st.session_state.newlist = get_data("NEWLIST")
 
-st.dataframe(st.session_state.master)
+st.dataframe(st.session_state.newlist)
 
 # Select Item Code
-itemcodes = st.selectbox("Select ItemCode", st.session_state.master["ItemCode"].unique())
+itemcodes = st.selectbox("Select ItemCode", st.session_state.newlist["ItemCode"].unique())
 foto_loading = st.file_uploader("Upload Foto Loading", type=["jpg", "jpeg", "png"])
-sequence_number = str(st.session_state.master[st.session_state.master["ItemCode"] == itemcodes]["SequenceNumber"].values[0])
+sequence_number = str(st.session_state.newlist[st.session_state.newlist["ItemCode"] == itemcodes]["SequenceNumber"].values[0])
 
 if itemcodes:
     # Generate barcode
