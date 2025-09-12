@@ -1,0 +1,128 @@
+import streamlit as st
+import barcode
+from barcode.writer import ImageWriter
+from PIL import Image, ImageDraw, ImageFont
+import gspread
+import pandas as pd
+from io import BytesIO
+from google.oauth2 import service_account
+
+# Streamlit Title
+st.title("Barcode Generator with Image")
+
+# Google Sheets Authentication
+google_cloud_secrets = st.secrets["google_cloud"]
+creds = service_account.Credentials.from_service_account_info(
+    {
+        "type": google_cloud_secrets["type"],
+        "project_id": google_cloud_secrets["project_id"],
+        "private_key_id": google_cloud_secrets["private_key_id"],
+        "private_key": google_cloud_secrets["private_key"].replace("\\n", "\n"),
+        "client_email": google_cloud_secrets["client_email"],
+        "client_id": google_cloud_secrets["client_id"],
+        "auth_uri": google_cloud_secrets["auth_uri"],
+        "token_uri": google_cloud_secrets["token_uri"],
+        "auth_provider_x509_cert_url": google_cloud_secrets["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": google_cloud_secrets["client_x509_cert_url"],
+        "universe_domain": google_cloud_secrets["universe_domain"],
+    },
+    scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"],
+)
+
+client = gspread.authorize(creds)
+spreadsheet_id = "15at-sHNUtXCZZMT-COgbdg4u_IMdhrMgx9BfgbNjINg"
+spreadsheet_id2 = "18t23AKiAQmK4A4dmkwqYTOGj4gNuFMEAsBpY50zJLNY"
+
+# Function to Get Data from Google Sheet
+def get_data(sheet_name):
+    sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name).get_all_records()
+    df_sheet = pd.DataFrame(sheet)
+    return df_sheet
+
+def get_data2(sheet_name):
+    sheet = client.open_by_key(spreadsheet_id2).worksheet(sheet_name).get_all_records()
+    df_sheet = pd.DataFrame(sheet)
+    return df_sheet
+
+if "newlist" not in st.session_state:
+    with st.spinner("Updating Master Data . . ."):
+        st.session_state.newlist = get_data("NEWLIST")
+
+if "catalougue" not in st.session_state:
+    with st.spinner("Updating Catalogue Data . . ."):
+        st.session_state.catalougue = get_data2("CatalogueUpdate")
+
+st.session_state.merge = pd.merge(
+    st.session_state.newlist,
+    st.session_state.catalougue[["ItemCode", "IsiCtn","Uom"]],
+    on="ItemCode",       # common column to merge on
+    how="left"             # or 'left', 'right', 'outer' depending on your needs
+)
+
+st.dataframe(st.session_state.merge)
+
+# Select Item Code
+itemcodes = st.selectbox("Select ItemCode", st.session_state.merge["ItemCode"].unique())
+foto_loading = st.file_uploader("Upload Foto Loading", type=["jpg", "jpeg", "png"])
+sequence_number = str(st.session_state.merge[st.session_state.merge["ItemCode"] == itemcodes]["SequenceNumber"].values[0])
+
+if itemcodes:
+    # Generate barcode
+    barcode_format = barcode.get_barcode_class('code128')
+    barcode_object = barcode_format(sequence_number, writer=ImageWriter())
+    barcode_bytes = BytesIO()
+    barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200, "font_size": 5})
+    barcode_bytes.seek(0)
+    barcode_image = Image.open(barcode_bytes)
+    st.image(barcode_image, width=300, caption="Generated Barcode")
+
+if st.button("Generate with Foto") and foto_loading is not None:
+    # Load Foto
+    img = Image.open(foto_loading).convert("RGBA")
+    img = img.resize((750, 750))
+    # Buat Template
+    template = Image.new("RGBA", (800, 1300), "white")
+    # Tempelkan Foto Loading
+    image_x = (template.width - img.width) // 2
+    image_y = 25
+    template.paste(img, (image_x, image_y))
+    # Tambah Text
+    draw = ImageDraw.Draw(template)
+    # Tambahkan teks (ItemCode) di bawah foto
+    font_size = 40
+    try:
+        font = ImageFont.truetype("NotoSansSC-VariableFont_wght.ttf", font_size)
+    except:
+        font = ImageFont.load_default()
+    text = f"ItemCode 货号 : {itemcodes}"
+    # text_x = (template.width - draw.textlength(text, font=font)) // 2
+    text_x = 50
+    text_y = image_y + img.height + 20
+    draw.text((text_x, text_y), text, fill="black", font=font)
+    # Hitung tinggi teks agar barcode tidak menimpa teks
+    text_height = font_size + 5  # Perkiraan tinggi teks dengan margin
+    barcode_image = barcode_image.resize((int(barcode_image.width * 1.5), int(barcode_image.height * 1.5)))
+    # Tempelkan Barcode di bawah teks
+    barcode_x = (template.width - barcode_image.width + 270) // 2
+    barcode_y = text_y + text_height + 25
+    textbarcode = "Barcode 条码 : "
+    textbarcode_x = 50
+    textbarcode_y = text_y + text_height + 80
+    draw.text((textbarcode_x, textbarcode_y), textbarcode, fill="black", font=font)
+    item_row = st.session_state.merge[st.session_state.merge["ItemCode"] == itemcodes]
+    IsiCtn = item_row["IsiCtn"].values[0] if not item_row.empty else "Unknown Item"
+    Uom = item_row["Uom"].values[0] if not item_row.empty else "-"
+    textqty = f"Quantity 数量 : {IsiCtn} {Uom}"
+    textqty_x = 50
+    textqty_y = textbarcode_y + text_height + 80
+    draw.text((textqty_x, textqty_y), textqty, fill="black", font=font)
+    textsize = "Measurement 尺寸 :  ....  X  ....  X  ....  CM"
+    textsize_x = 50
+    textsize_y = textqty_y + text_height + 80
+    draw.text((textsize_x, textsize_y), textsize, fill="black", font=font)
+    template.paste(barcode_image, (barcode_x, barcode_y))
+    st.image(template, width=800)
+    # Simpan & Download
+    buf = BytesIO()
+    template.save(buf, "PNG")
+    st.download_button("Download", buf.getvalue(), f"{itemcodes}.png", "image/png")
