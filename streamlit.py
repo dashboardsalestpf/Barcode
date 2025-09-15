@@ -33,11 +33,17 @@ generate_photos_ws = st.Page(
 maintenance = st.Page(
     page='error.py',
     title='Maintenance',
-    icon='⚙️',)
+    icon='⚙️',
+)
 
+generate_code2 = st.Page(
+    page='generate_code2.py',
+    title='Generate Code 2',
+    icon='📦',
+)
 
 pg = st.navigation({
-    'Generate Code': [dashboard,generate_code,generate_photos,generate_photos2,generate_photos_ws]
+    'Generate Code': [dashboard,generate_code,generate_photos,generate_photos2,generate_photos_ws, generate_code2]
 })
 
 
