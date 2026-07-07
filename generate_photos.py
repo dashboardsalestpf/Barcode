@@ -45,21 +45,52 @@ if "newlist" not in st.session_state:
 st.dataframe(st.session_state.newlist)
 
 # Select Item Code
-itemcodes = st.selectbox("Select ItemCode", st.session_state.newlist["ItemCode"].unique())
+# itemcodes = st.selectbox("Select ItemCode", st.session_state.newlist["ItemCode"].unique())
+search = st.text_input("Search ItemCode")
+
+itemcodes = None  # Initialize
+
+if search:
+    matches = (
+        st.session_state.newlist.loc[
+            st.session_state.newlist["ItemCode"].astype(str).str.contains(search, case=False, na=False),
+            "ItemCode",
+        ]
+        .drop_duplicates()
+        .sort_values()
+        .head(50)
+        .tolist()
+    )
+    if matches:
+        itemcodes = st.selectbox("Matching ItemCodes", matches)
+    else:
+        st.info("No matching ItemCode found.")
+
 foto_loading = st.file_uploader("Upload Foto Loading", type=["jpg", "jpeg", "png"])
-sequence_number = str(st.session_state.newlist[st.session_state.newlist["ItemCode"] == itemcodes]["SequenceNumber"].values[0])
 
-if itemcodes:
-    # Generate barcode
-    barcode_format = barcode.get_barcode_class('code128')
-    barcode_object = barcode_format(sequence_number, writer=ImageWriter())
+if itemcodes is not None:
+    filtered = st.session_state.newlist[
+        st.session_state.newlist["ItemCode"] == itemcodes
+    ]
 
-    barcode_bytes = BytesIO()
-    barcode_object.write(barcode_bytes, {"module_height": 8, "module_width": 0.3, "dpi": 200, "font_size": 5})
-    barcode_bytes.seek(0)
-    barcode_image = Image.open(barcode_bytes)
-
-    st.image(barcode_image, width=300, caption="Generated Barcode")
+    if not filtered.empty:
+        sequence_number = str(filtered["SequenceNumber"].iloc[0])
+        # Generate barcode
+        barcode_format = barcode.get_barcode_class("code128")
+        barcode_object = barcode_format(sequence_number, writer=ImageWriter())
+        barcode_bytes = BytesIO()
+        barcode_object.write(
+            barcode_bytes,
+            {
+                "module_height": 8,
+                "module_width": 0.3,
+                "dpi": 200,
+                "font_size": 5,
+            },
+        )
+        barcode_bytes.seek(0)
+        barcode_image = Image.open(barcode_bytes)
+        st.image(barcode_image, width=300, caption="Generated Barcode")
 
 if st.button("Generate with Foto") and foto_loading is not None:
     # Load Foto
